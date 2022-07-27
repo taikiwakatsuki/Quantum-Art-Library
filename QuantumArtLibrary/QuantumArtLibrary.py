@@ -63,14 +63,16 @@ def road_shader(vertex_shader, fragment_shader):
         """.strip()
 
 
-def simulation(image="DoubleSlit", n=400, step=300, method="split-step", white=1, range=[0.1, 0.9]):
-    global N, N_range, total_frames, gray_range, wb
+def simulation(image="DoubleSlit", n=400, step=300, p=[0, -15], v=[0, 80], method="split-step", white=1, range=[0.1, 0.9]):
+    global N, N_range, total_frames, gray_range, wb, init_pos, velocity
 
     N = n
     N_range = N + 2
     total_frames = step
     gray_range = range
     wb = white
+    init_pos = p
+    velocity = v
     img = image_adjustment(image)
 
     if method == "split-step":
@@ -87,13 +89,13 @@ def particle():
     return x, y
 
 
-def wavefunction(x0=0, y0=-15, vx0=0, vy0=80):
+def wavefunction():
     particle_x, particle_y = particle()
     σ = 1.0 * Å
-    vx0 *= Å / femtoseconds
-    vy0 *= Å / femtoseconds
+    vx0 = velocity[0] * Å / femtoseconds
+    vy0 = velocity[1] * Å / femtoseconds
 
-    return np.exp(-1 / (4 * σ ** 2) * ((particle_x - x0 * Å) ** 2 + (particle_y - y0 * Å) ** 2)) / np.sqrt(2 * np.pi * σ ** 2) * np.exp(vx0 * particle_x * 1j + vy0 * particle_y * 1j)
+    return np.exp(-1 / (4 * σ ** 2) * ((particle_x - init_pos[0] * Å) ** 2 + (particle_y - init_pos[1] * Å) ** 2)) / np.sqrt(2 * np.pi * σ ** 2) * np.exp(vx0 * particle_x * 1j + vy0 * particle_y * 1j)
 
 
 def compute_momentum_space():
