@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import gl_util
+from .gl_util import *
 from PIL import Image
 import progressbar
 import time
@@ -262,11 +262,11 @@ def init_draw(window, width, height, simulation):
     vert_color = np.array(vert_color, dtype=np.float32)
 
     # OpenGL
-    program = gl_util.create_program(vertex_shader_src, fragment_shader_src)
+    program = create_program(vertex_shader_src, fragment_shader_src)
     pos_loc = glGetAttribLocation(program, "position")
     color_loc = glGetAttribLocation(program, "color")
-    pos_vbo = gl_util.create_vbo(vert_pos)
-    color_vbo = gl_util.create_vbo(vert_color)
+    pos_vbo = create_vbo(vert_pos)
+    color_vbo = create_vbo(vert_color)
 
 
 def update(simulation, frame):
@@ -285,9 +285,9 @@ def update(simulation, frame):
     vert_color = np.array(vert_color, dtype=np.float32)
 
     # OpenGL
-    program = gl_util.create_program(vertex_shader_src, fragment_shader_src)
+    program = create_program(vertex_shader_src, fragment_shader_src)
     color_loc = glGetAttribLocation(program, "color")
-    color_vbo = gl_util.create_vbo(vert_color)
+    color_vbo = create_vbo(vert_color)
 
 
 def draw():
