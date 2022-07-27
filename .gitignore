@@ -4,3 +4,4 @@ dist/
 *.egg-info/
 setup.py
 __pycache__/
+.DS_Store
