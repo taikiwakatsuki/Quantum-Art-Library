@@ -23,15 +23,17 @@ There are two ways to use it. One is to output the quantum simulation results as
 
 ### Quantum Simulation
 ```
-simulation(image="sample.png", n=400, frame=300, method="split-step", white=1, range=[0.1, 0.9])
+simulation(image="sample.png", n=400, step=300, p=[0, -15], v=[0, 80], method="split-step", white=1, range=[0.1, 0.9])
 ```
 
 Not all arguments are required. The above is the default value other than image. If no image is specified, it simulates a double slit experiment.
 
 **image**: *Image to input.*<br>
 **`n`**: *Number of grid points.*<br>
-**`frame`**: *Number of frames to output.*<br>
-**`method`**: *Simulation method. When simulating on a GPU using CuPy, you can use the following methods:* `method="split-step-cupy"`<br>
+**`step`**: *Number of frames to output.*<br>
+**`p`**: *Initial position of the quantum.*<br>
+**`v`**: *Quantum speed and direction.*<br>
+**`method`**: *Simulation method. When simulating on a GPU using CuPy, you can use the following methods:* `split-step-cupy`<br>
 **`white`**: *Set 1 for images based on white and 0 for images based on black.*<br>
 **`range`**: *Set the range to convert to grayscale.*
 
