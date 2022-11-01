@@ -7,6 +7,7 @@ This is a creative coding library for artistic expression of quantum behavior.
 * progressbar
 * time
 * os
+* platform
 * PyOpenGL
 * glfw
 * cv2
