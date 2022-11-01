@@ -4,7 +4,7 @@ This is a creative coding library for artistic expression of quantum behavior.
 ## Requirement
 * NumPy
 * Matplotlib
-* progressbar
+* tqdm
 * time
 * os
 * platform
