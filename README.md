@@ -1,4 +1,6 @@
 # Quantum-Art-Library
+[![PyPI version](https://badge.fury.io/py/quantumartlibrary.svg)](https://badge.fury.io/py/quantumartlibrary)
+[![Python Versions](https://img.shields.io/pypi/pyversions/polar_bear.svg)](https://pypi.org/project/polar-bear/)
 This is a creative coding library for artistic expression of quantum behavior.
 
 ## Requirement
