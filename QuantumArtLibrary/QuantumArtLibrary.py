@@ -2,12 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from .gl_util import *
 from PIL import Image
-import progressbar
-import time
 from OpenGL.GL import *
 import glfw
 import cv2
+from tqdm import tqdm
 import os
+import platform
 
 
 # parameter
@@ -64,10 +64,9 @@ def road_shader(vertex_shader, fragment_shader):
 
 
 def simulation(image="DoubleSlit", n=400, step=300, p=[0, -15], v=[0, 80], method="split-step", white=1, range=[0.1, 0.9]):
-    global N, N_range, total_frames, gray_range, wb, init_pos, velocity
+    global N, total_frames, gray_range, wb, init_pos, velocity
 
     N = n
-    N_range = N + 2
     total_frames = step
     gray_range = range
     wb = white
@@ -76,14 +75,14 @@ def simulation(image="DoubleSlit", n=400, step=300, p=[0, -15], v=[0, 80], metho
     img = image_adjustment(image)
 
     if method == "split-step":
-        return splitstep(img, N_range=N_range, total_frames=total_frames)
+        return splitstep(img, N=N, total_frames=total_frames)
     elif method == "split-step-cupy":
-        return splitstepcupy(img, N_range=N_range, total_frames=total_frames)
+        return splitstepcupy(img, N=N, total_frames=total_frames)
 
 
 def particle():
-    x = np.linspace(-extent / 2, extent / 2, N_range)
-    y = np.linspace(-extent / 2, extent / 2, N_range)
+    x = np.linspace(-extent / 2, extent / 2, N)
+    y = np.linspace(-extent / 2, extent / 2, N)
     x, y = np.meshgrid(x, y)
 
     return x, y
@@ -100,14 +99,14 @@ def wavefunction():
 
 def compute_momentum_space():
     px = np.linspace(
-        -np.pi * N_range // 2 / (extent / 2) * hbar,
-        np.pi * N_range // 2 / (extent / 2) * hbar,
-        N_range,
+        -np.pi * N // 2 / (extent / 2) * hbar,
+        np.pi * N // 2 / (extent / 2) * hbar,
+        N,
     )
     py = np.linspace(
-        -np.pi * N_range // 2 / (extent / 2) * hbar,
-        np.pi * N_range // 2 / (extent / 2) * hbar,
-        N_range,
+        -np.pi * N // 2 / (extent / 2) * hbar,
+        np.pi * N // 2 / (extent / 2) * hbar,
+        N,
     )
     px, py = np.meshgrid(px, py)
 
@@ -137,27 +136,21 @@ def potential(image, frame=None):
     else:
         # Double Slit
         potential_value = 5
-        b = 2.0* Å # slits separation
-        a = 0.5* Å # slits width
-        d = 0.5* Å # slits depth
+        b = 2.0* Å
+        a = 0.5* Å
+        d = 0.5* Å
         potential_pos = np.where( ((particle_x < - b/2 - a) | (particle_x > b/2 + a) | ((particle_x > -b/2) & (particle_x < b/2))) & ((particle_y < d/2) & (particle_y > -d/2) ), potential_value, 0)
-
-    # Non potential
-    # self.p_alpha = 0
-    # potential_value = 0
-    # potential_pos = np.zeros((N, N))
-    # potpos = potential_pos
 
     return potential_pos
 
 
-def splitstep(image, N_range, total_frames):
+def splitstep(image, N, total_frames):
     dt = simulation_time / total_frames
     Nt = int(np.round(dt / (simulation_time / 10000)))
     simulation_dt = dt / Nt
     p2 = np.array(compute_momentum_space())
 
-    Ψ = np.zeros((total_frames + 1, * ([N_range] * 2)), dtype=np.complex128)
+    Ψ = np.zeros((total_frames + 1, * ([N] * 2)), dtype=np.complex128)
     Ψ[0] = np.array(wavefunction())
 
     m = m_e
@@ -165,22 +158,15 @@ def splitstep(image, N_range, total_frames):
     Ur = -0.5j*(simulation_dt / hbar)
     Uk = np.exp(-0.5j*(simulation_dt / (m * hbar)) * p2)
 
-    t0 = time.time()
-    bar = progressbar.ProgressBar()
     frame = 0
-    for i in bar(range(total_frames)):
+    for i in tqdm(range(total_frames), ncols=100):
         Ur_V = np.exp(Ur * np.array(potential(image, frame)))
         tmp = np.copy(Ψ[i])
         for j in range(Nt):
             c = np.fft.fftshift(np.fft.fftn(Ur_V * tmp))
             tmp = Ur_V * np.fft.ifftn(np.fft.ifftshift(Uk * c))
-        tmp[0] = 0
-        tmp[-1] = 0
-        tmp[:][0] = 0
-        tmp[:][-1] = 0
         Ψ[i+1] = tmp
         frame += 1
-    print(time.time() - t0)
 
     simulation_Ψ = Ψ
     simulation_Ψmax = np.amax(np.abs(Ψ))
@@ -188,7 +174,7 @@ def splitstep(image, N_range, total_frames):
     return simulation_Ψ / simulation_Ψmax
 
 
-def splitstepcupy(image, N_range, total_frames):
+def splitstepcupy(image, N, total_frames):
     import cupy as cp
 
     dt = simulation_time / total_frames
@@ -196,7 +182,7 @@ def splitstepcupy(image, N_range, total_frames):
     simulation_dt = dt / Nt
     p2 = cp.array(compute_momentum_space())
 
-    Ψ = cp.zeros((total_frames + 1, * ([N_range]) * 2), dtype=cp.complex128)
+    Ψ = cp.zeros((total_frames + 1, * ([N]) * 2), dtype=cp.complex128)
     Ψ[0] = cp.array(wavefunction())
 
     m = m_e
@@ -204,22 +190,15 @@ def splitstepcupy(image, N_range, total_frames):
     Ur = -0.5j*(simulation_dt / hbar)
     Uk = cp.exp(-0.5j*(simulation_dt / (m * hbar)) * p2)
 
-    t0 = time.time()
-    bar = progressbar.ProgressBar()
     frame = 0
-    for i in bar(range(total_frames)):
+    for i in tqdm(range(total_frames), ncols=100):
         Ur_V = cp.exp(Ur * cp.array(potential(image, frame)))
         tmp = cp.copy(Ψ[i])
         for j in range(Nt):
             c = cp.fft.fftshift(cp.fft.fftn(Ur_V * tmp))
             tmp = Ur_V * np.fft.ifftn(cp.fft.ifftshift(Uk * c))
-        tmp[0] = 0
-        tmp[-1] = 0
-        tmp[:][0] = 0
-        tmp[:][-1] = 0
         Ψ[i+1] = tmp
         frame += 1
-    print(time.time() - t0)
 
     simulation_Ψ = Ψ.get()
     simulation_Ψmax = np.amax(np.abs(simulation_Ψ))
@@ -227,7 +206,7 @@ def splitstepcupy(image, N_range, total_frames):
     return simulation_Ψ / simulation_Ψmax
 
 
-def complex_to_rgba(Z: np.ndarray, max_val: float = 1.0) -> np.ndarray:
+def complex_to_rgba(Z, max_val=1.0):
 
     # cmap = plt.cm.twilight
     # cmap = plt.cm.cividis
@@ -242,8 +221,25 @@ def complex_to_rgba(Z: np.ndarray, max_val: float = 1.0) -> np.ndarray:
     return np.concatenate((rgb_map, abs_z.reshape((*abs_z.shape, 1))), axis=(abs_z.ndim))
 
 
+def create_vao(vert_pos, vert_color):
+    pos_vbo = create_vbo(vert_pos)
+    color_vbo = create_vbo(vert_color)
+    vao = glGenVertexArrays(1)
+    glBindVertexArray(vao)
+    glEnableVertexAttribArray(pos_loc)
+    glBindBuffer(GL_ARRAY_BUFFER, pos_vbo)
+    glVertexAttribPointer(pos_loc, 2, GL_FLOAT, GL_FALSE, 0, None)
+    glEnableVertexAttribArray(color_loc)
+    glBindBuffer(GL_ARRAY_BUFFER, color_vbo)
+    glVertexAttribPointer(color_loc, 4, GL_FLOAT, GL_FALSE, 0, None)
+    glBindBuffer(GL_ARRAY_BUFFER, 0)
+    glBindVertexArray(0)
+    
+    return vao
+
+
 def init_draw(window, width, height, simulation):
-    global program, pos_vbo, color_vbo, pos_loc, color_loc, vert_pos, vert_color
+    global program, vao, pos_loc, color_loc, vert_pos, vert_color
 
     result = complex_to_rgba(simulation[0])
     
@@ -255,11 +251,9 @@ def init_draw(window, width, height, simulation):
     vert_pos = np.array(vert_pos, dtype=np.float32)
 
     # color
-    result = result[1:N+1, 1:N+1]
     vert_color = result.reshape(N**2, 4)
     potential_rgb = np.array([[potcol, potcol, potcol]]*(N**2))
-    potential_alpha = potential_pos[1:N+1, 1:N+1]
-    potential_color = np.block([potential_rgb, potential_alpha.reshape(N**2, 1)])
+    potential_color = np.block([potential_rgb, potential_pos.reshape(N**2, 1)])
     vert_color = np.concatenate([vert_color, potential_color])
     vert_color = np.array(vert_color, dtype=np.float32)
 
@@ -267,43 +261,38 @@ def init_draw(window, width, height, simulation):
     program = create_program(vertex_shader_src, fragment_shader_src)
     pos_loc = glGetAttribLocation(program, "position")
     color_loc = glGetAttribLocation(program, "color")
-    pos_vbo = create_vbo(vert_pos)
-    color_vbo = create_vbo(vert_color)
+    vao = create_vao(vert_pos, vert_color)
 
 
 def update(simulation, frame):
-    global program, pos_vbo, color_vbo, pos_loc, color_loc, vert_pos, vert_color
+    global program, vao, pos_loc, color_loc, vert_pos, vert_color
 
     # color adjustment
     result = complex_to_rgba(simulation[frame])
 
     # color
-    result = result[1:N+1, 1:N+1]
     vert_color = result.reshape(N**2, 4)
     potential_rgb = np.array([[potcol, potcol, potcol]]*(N**2))
-    potential_alpha = potential_pos[1:N+1, 1:N+1]
-    potential_color = np.block([potential_rgb, potential_alpha.reshape(N**2, 1)])
+    potential_color = np.block([potential_rgb, potential_pos.reshape(N**2, 1)])
     vert_color = np.concatenate([vert_color, potential_color])
     vert_color = np.array(vert_color, dtype=np.float32)
 
     # OpenGL
     program = create_program(vertex_shader_src, fragment_shader_src)
+    pos_loc = glGetAttribLocation(program, "position")
     color_loc = glGetAttribLocation(program, "color")
-    color_vbo = create_vbo(vert_color)
+    vao = create_vao(vert_pos, vert_color)
 
 
 def draw():
+    glViewport(0, 0, N, N)
+    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE)
     glEnable(GL_BLEND)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
     glUseProgram(program)
-    glEnableVertexAttribArray(pos_loc)
-    glBindBuffer(GL_ARRAY_BUFFER, pos_vbo)
-    glVertexAttribPointer(pos_loc, 2, GL_FLOAT, GL_FALSE, 0, None)
-    glEnableVertexAttribArray(color_loc)
-    glBindBuffer(GL_ARRAY_BUFFER, color_vbo)
-    glVertexAttribPointer(color_loc, 4, GL_FLOAT, GL_FALSE, 0, None)
+    glBindVertexArray(vao)
     glDrawArrays(GL_POINTS, 0, N**2*2)
-    glBindBuffer(GL_ARRAY_BUFFER, 0)
+    glBindVertexArray(0)
     glUseProgram(0)
 
 
@@ -338,8 +327,8 @@ def image_adjustment(image):
     if str(image) != "DoubleSlit":
         img = cv2.imread(image, cv2.IMREAD_GRAYSCALE)
         img = cv2.flip(img, 0)
-        img2 = cv2.resize(img, (N_range, N_range))
-        img_color = np.empty((N_range, N_range))
+        img2 = cv2.resize(img, (N, N))
+        img_color = np.empty((N, N))
         img_color[:] = img2
         image = img_color
 
@@ -385,6 +374,15 @@ def drawing(simulation, vertex_shader=None, fragment_shader=None):
     if not glfw.init():
         return
     
+    glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 4)
+    glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 0)
+    glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
+
+    if platform.system().lower() == 'darwin':
+        glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, GL_TRUE)
+        SCREEN_WIDTH = int(N / 2)
+        SCREEN_HEIGHT = int(N / 2)
+
     window = glfw.create_window(SCREEN_WIDTH, SCREEN_HEIGHT, "Quantum Art", None, None)
     if not window:
         glfw.terminate()
@@ -392,10 +390,6 @@ def drawing(simulation, vertex_shader=None, fragment_shader=None):
         return
     
     glfw.make_context_current(window)
-
-    glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 4)
-    glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 0)
-    glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
 
     init_draw(window, SCREEN_WIDTH, SCREEN_HEIGHT, simulation)
 

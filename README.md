@@ -4,14 +4,13 @@ This is a creative coding library for artistic expression of quantum behavior.
 ## Requirement
 * NumPy
 * Matplotlib
-* tqdm
-* time
-* os
-* platform
 * PyOpenGL
 * glfw
 * cv2
 * PIL
+* tqdm
+* os
+* platform
 * CuPy (Not required.)
 
 ## Installation
