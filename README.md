@@ -15,7 +15,7 @@ This is a creative coding library for artistic expression of quantum behavior.
 * tqdm
 * os
 * platform
-* CuPy (Not required.)
+* CuPy (optional)
 
 ## Installation
 ```
