@@ -1,5 +1,6 @@
-[![PyPI version](https://badge.fury.io/py/quantumartlibrary.svg)](https://badge.fury.io/py/quantumartlibrary)
 [![Python Versions](https://img.shields.io/pypi/pyversions/quantumartlibrary.svg)](https://pypi.org/project/quantumartlibrary/)
+[![PyPI version](https://badge.fury.io/py/quantumartlibrary.svg)](https://badge.fury.io/py/quantumartlibrary)
+[![PyPI - License](https://img.shields.io/pypi/l/quantumartlibrary.svg)](https://pypi.org/project/quantumartlibrary/)
 
 # Quantum-Art-Library
 This is a creative coding library for artistic expression of quantum behavior.
