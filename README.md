@@ -5,7 +5,7 @@
 # Quantum-Art-Library
 This is a creative coding library for artistic expression of quantum behavior.
 
-![DoubleSlit](https://user-images.githubusercontent.com/52993310/200101618-0cdfe162-cbfe-4a88-a835-030ab460ff8b.mp4)
+![DoubleSlit](https://user-images.githubusercontent.com/52993310/200101709-5bd06789-2e93-45c2-ab7e-a7dfccf1c52b.gif)
 
 ## Requirement
 * NumPy
