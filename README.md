@@ -7,7 +7,8 @@
 This is a creative coding library for artistic expression of quantum behavior.
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/52993310/200101709-5bd06789-2e93-45c2-ab7e-a7dfccf1c52b.gif" />
+  <img src="https://user-images.githubusercontent.com/52993310/200102045-1058d2b8-0578-408b-88a6-8b8b64553c9e.gif" />
+  <img src="https://user-images.githubusercontent.com/52993310/200102048-614541d8-6c0b-41c4-8645-b60aca004301.png" />
 </p>
 
 ## Requirement
